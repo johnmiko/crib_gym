@@ -1,4 +1,4 @@
-# noqa: D212, D415
+# noqa
 """
 # Texas Hold'em
 
@@ -76,14 +76,12 @@ whose turn it is. Taking an illegal move ends the game with a reward of -1 for t
 * v0: Initial versions release (1.0.0)
 
 """
-from __future__ import annotations
 
 import os
 
 import gymnasium
 import numpy as np
 import pygame
-from gymnasium.utils import EzPickle
 from pettingzoo.classic.rlcard_envs.rlcard_base import RLCardBase
 from pettingzoo.utils import wrappers
 
@@ -115,7 +113,7 @@ def env(**kwargs):
     return env
 
 
-class raw_env(RLCardBase, EzPickle):
+class raw_env(RLCardBase):
     metadata = {
         "render_modes": ["human", "rgb_array"],
         "name": "texas_holdem_v4",
@@ -123,19 +121,9 @@ class raw_env(RLCardBase, EzPickle):
         "render_fps": 1,
     }
 
-    def __init__(
-            self,
-            num_players: int = 2,
-            render_mode: str | None = None,
-            screen_height: int | None = 1000,
-    ):
-        EzPickle.__init__(self, num_players, render_mode, screen_height)
+    def __init__(self, num_players=2, render_mode=None):
         super().__init__("limit-holdem", num_players, (72,))
         self.render_mode = render_mode
-        self.screen_height = screen_height
-
-        if self.render_mode == "human":
-            self.clock = pygame.time.Clock()
 
     def step(self, action):
         super().step(action)
@@ -157,7 +145,7 @@ class raw_env(RLCardBase, EzPickle):
                         / (np.ceil(len(self.possible_agents) / 2) + 1)
                         * np.ceil((i + 1) / 2)
                 )
-                + (tile_size * 33 / 616)
+                + (tile_size * 31 / 616)
             )
 
         def calculate_offset(hand, j, tile_size):
@@ -168,20 +156,20 @@ class raw_env(RLCardBase, EzPickle):
         def calculate_height(screen_height, divisor, multiplier, tile_size, offset):
             return int(multiplier * screen_height / divisor + tile_size * offset)
 
-        screen_height = self.screen_height
+        screen_height = 1000
         screen_width = int(
             screen_height * (1 / 20)
-            + np.ceil(len(self.possible_agents) / 2) * (screen_height * 12 / 20)
+            + np.ceil(len(self.possible_agents) / 2) * (screen_height * 1 / 2)
         )
 
-        if self.screen is None:
-            pygame.init()
-
-            if self.render_mode == "human":
+        if self.render_mode == "human":
+            if self.screen is None:
+                pygame.init()
                 self.screen = pygame.display.set_mode((screen_width, screen_height))
-                pygame.display.set_caption("Texas Hold'em")
-            else:
-                self.screen = pygame.Surface((screen_width, screen_height))
+            pygame.event.get()
+        elif self.screen is None:
+            pygame.font.init()
+            self.screen = pygame.Surface((screen_width, screen_height))
 
         # Setup dimensions for card size and setup for colors
         tile_size = screen_height * 2 / 10
@@ -219,10 +207,6 @@ class raw_env(RLCardBase, EzPickle):
                             (
                                     calculate_width(self, screen_width, i)
                                     - calculate_offset(state["hand"], j, tile_size)
-                                    - tile_size
-                                    * (8 / 10)
-                                    * (1 - np.ceil(i / 2))
-                                    * (0 if len(self.possible_agents) == 2 else 1)
                             ),
                             calculate_height(screen_height, 4, 1, tile_size, -1),
                         ),
@@ -235,10 +219,6 @@ class raw_env(RLCardBase, EzPickle):
                             (
                                     calculate_width(self, screen_width, i)
                                     - calculate_offset(state["hand"], j, tile_size)
-                                    - tile_size
-                                    * (8 / 10)
-                                    * (1 - np.ceil((i - 1) / 2))
-                                    * (0 if len(self.possible_agents) == 2 else 1)
                             ),
                             calculate_height(screen_height, 4, 3, tile_size, 0),
                         ),
@@ -254,10 +234,6 @@ class raw_env(RLCardBase, EzPickle):
                             screen_width
                             / (np.ceil(len(self.possible_agents) / 2) + 1)
                             * np.ceil((i + 1) / 2)
-                            - tile_size
-                            * (8 / 10)
-                            * (1 - np.ceil(i / 2))
-                            * (0 if len(self.possible_agents) == 2 else 1)
                     ),
                     calculate_height(screen_height, 4, 1, tile_size, -(22 / 20)),
                 )
@@ -267,10 +243,6 @@ class raw_env(RLCardBase, EzPickle):
                             screen_width
                             / (np.ceil(len(self.possible_agents) / 2) + 1)
                             * np.ceil((i + 1) / 2)
-                            - tile_size
-                            * (8 / 10)
-                            * (1 - np.ceil((i - 1) / 2))
-                            * (0 if len(self.possible_agents) == 2 else 1)
                     ),
                     calculate_height(screen_height, 4, 3, tile_size, (23 / 20)),
                 )
@@ -302,13 +274,7 @@ class raw_env(RLCardBase, EzPickle):
                             (
                                 (
                                         calculate_width(self, screen_width, i)
-                                        + tile_size
-                                        * (8 / 10)
-                                        * (
-                                            1
-                                            if len(self.possible_agents) == 2
-                                            else np.ceil(i / 2)
-                                        )
+                                        + tile_size * (8 / 10)
                                 ),
                                 calculate_height(screen_height, 4, 1, tile_size, -1 / 2)
                                 - ((j + height) * tile_size / 15),
@@ -320,13 +286,7 @@ class raw_env(RLCardBase, EzPickle):
                             (
                                 (
                                         calculate_width(self, screen_width, i)
-                                        + tile_size
-                                        * (8 / 10)
-                                        * (
-                                            1
-                                            if len(self.possible_agents) == 2
-                                            else np.ceil((i - 1) / 2)
-                                        )
+                                        + tile_size * (8 / 10)
                                 ),
                                 calculate_height(screen_height, 4, 3, tile_size, 1 / 2)
                                 - ((j + height) * tile_size / 15),
@@ -337,29 +297,13 @@ class raw_env(RLCardBase, EzPickle):
             # Blit text number
             if i % 2 == 0:
                 textRect.center = (
-                    (
-                            calculate_width(self, screen_width, i)
-                            + (tile_size * (5 / 20))
-                            + tile_size
-                            * (8 / 10)
-                            * (1 if len(self.possible_agents) == 2 else np.ceil(i / 2))
-                    ),
+                    (calculate_width(self, screen_width, i) + tile_size * (21 / 20)),
                     calculate_height(screen_height, 4, 1, tile_size, -1 / 2)
                     - ((height + 1) * tile_size / 15),
                 )
             else:
                 textRect.center = (
-                    (
-                            calculate_width(self, screen_width, i)
-                            + (tile_size * (5 / 20))
-                            + tile_size
-                            * (8 / 10)
-                            * (
-                                1
-                                if len(self.possible_agents) == 2
-                                else np.ceil((i - 1) / 2)
-                            )
-                    ),
+                    (calculate_width(self, screen_width, i) + tile_size * (21 / 20)),
                     calculate_height(screen_height, 4, 3, tile_size, 1 / 2)
                     - ((height + 1) * tile_size / 15),
                 )
@@ -422,7 +366,6 @@ class raw_env(RLCardBase, EzPickle):
 
         if self.render_mode == "human":
             pygame.display.update()
-            self.clock.tick(self.metadata["render_fps"])
 
         observation = np.array(pygame.surfarray.pixels3d(self.screen))
 

@@ -324,6 +324,8 @@ if __name__ == "__main__":
     # train the agent and watch its performance in a match!
     args = get_args()
     args.resume_path = "./log/gin/dqn/policy.pth"
+    args.watch = True
+    # args.render = "human"
     logger.info(args)
     result, agent = train_agent(args)
     watch(args, agent)
